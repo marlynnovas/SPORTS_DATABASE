@@ -1,49 +1,121 @@
 from database.connection import get_connection
-from services.membership_service import update_membership_status
+from services.membership_service import MembershipService
 
-def register_payment(member_id, membership_id, amount):
-    """
-    Registra un pago y activa la membresía asociada.
-    """
-    conn = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
+class PaymentService:
+    @staticmethod
+    def get_all_payments(limit: int = 100):
+        """Recupera todos los pagos con información relacionada."""
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT py.id,
+                       py.amount,
+                       py.payment_date,
+                       py.payment_status,
+                       m.full_name,
+                       p.name AS plan_name
+                FROM payments py
+                JOIN memberships ms ON py.membership_id = ms.id
+                JOIN members m      ON ms.member_id = m.id
+                JOIN plans p        ON ms.plan_id   = p.id
+                ORDER BY py.payment_date DESC
+                LIMIT ?
+            """, (limit,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Error fetching payments: {e}")
+            return []
+        finally:
+            if conn: conn.close()
 
-        # Insertar el pago
-        cursor.execute("""
-            INSERT INTO payments (member_id, membership_id, amount, payment_status)
-            VALUES (?, ?, ?, 'paid')
-        """, (member_id, membership_id, amount))
+    @staticmethod
+    def revenue_mtd() -> float:
+        """Ingresos del mes actual (Month To Date)"""
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0) FROM payments
+                WHERE strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now')
+                  AND payment_status = 'paid'
+            """)
+            val = cursor.fetchone()[0]
+            return float(val)
+        except:
+            return 0.0
+        finally:
+            if conn: conn.close()
 
-        # Al registrar un pago completado, nos aseguramos de que la membresía esté activa
-        update_membership_status(membership_id, "active")
+    @staticmethod
+    def count_by_status(status: str) -> int:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM payments WHERE payment_status = ?", (status,))
+            count = cursor.fetchone()[0]
+            return count
+        except:
+            return 0
+        finally:
+            if conn: conn.close()
 
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error registering payment: {e}")
-        if conn: conn.rollback()
-        return False
-    finally:
-        if conn: conn.close()
+    @staticmethod
+    def average_amount() -> float:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COALESCE(AVG(amount), 0) FROM payments")
+            val = cursor.fetchone()[0]
+            return float(val)
+        except:
+            return 0.0
+        finally:
+            if conn: conn.close()
 
-def get_payments_by_member(member_id):
-    """Recupera el historial de pagos de un miembro específico."""
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
+    @staticmethod
+    def register_payment(member_id, membership_id, amount):
+        """
+        Registra un pago y activa la membresía asociada.
+        Migrado de mi implementación robusta previa.
+        """
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT * FROM payments 
-            WHERE member_id = ? 
-            ORDER BY payment_date DESC
-        """, (member_id,))
-        
-        rows = cursor.fetchall()
-        return [dict(row) for row in rows]
-    except Exception as e:
-        print(f"Error fetching payments: {e}")
-        return []
-    finally:
-        if conn: conn.close()
+            cursor.execute("""
+                INSERT INTO payments (member_id, membership_id, amount, payment_status)
+                VALUES (?, ?, ?, 'paid')
+            """, (member_id, membership_id, amount))
+
+            # Activar membresía
+            MembershipService.update_membership_status(membership_id, "active")
+
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error registering payment: {e}")
+            if conn: conn.rollback()
+            return False
+        finally:
+            if conn: conn.close()
+            
+    @staticmethod
+    def get_payments_by_member(member_id):
+        """Historial de pagos de un miembro."""
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM payments 
+                WHERE member_id = ? 
+                ORDER BY payment_date DESC
+            """, (member_id,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Error fetching payments: {e}")
+            return []
+        finally:
+            if conn: conn.close()
