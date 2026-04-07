@@ -1,6 +1,8 @@
 import flet as ft
 from services.member_service import MemberService
-
+from services.plan_service import PlanService
+from services.membership_service import MembershipService
+from datetime import date, timedelta
 
 def MembersView(page: ft.Page):
 
@@ -25,55 +27,80 @@ def MembersView(page: ft.Page):
 
     stats_container = ft.Container(content=make_stats())
 
-    # ── add member dialog ────────────────────────────────────────────────
+    # ── add/edit member dialog ───────────────────────────────────────────
+    edit_mode = False
+    current_mid = None
+
     first_name_input = ft.TextField(label="First Name")
     last_name_input  = ft.TextField(label="Last Name")
     email_input      = ft.TextField(label="Email")
     phone_input      = ft.TextField(label="Phone")
+    
+    plan_dropdown = ft.Dropdown(label="Initial Membership Plan", options=[])
+
+    def load_plans():
+        plans = PlanService.get_all_plans()
+        plan_dropdown.options = [ft.dropdown.Option(key=str(p["id"]), text=f"{p['name']} (${p['price']})") for p in plans]
+        page.update()
 
     def save_member(e):
+        nonlocal edit_mode, current_mid
         if not first_name_input.value or not last_name_input.value or not email_input.value:
-            page.snack_bar = ft.SnackBar(ft.Text("Fill required fields"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
-            page.update()
             return
-        MemberService.create_member(
-            first_name_input.value, last_name_input.value,
-            email_input.value, phone_input.value
-        )
-        # clear
-        for f in [first_name_input, last_name_input, email_input, phone_input]:
-            f.value = ""
-        add_dialog.open = False
+        
+        if edit_mode:
+            MemberService.update_member(current_mid, first_name_input.value, last_name_input.value, email_input.value, phone_input.value)
+        else:
+            mid = MemberService.create_member(first_name_input.value, last_name_input.value, email_input.value, phone_input.value)
+            if mid and plan_dropdown.value:
+                pid = int(plan_dropdown.value)
+                plan = next((p for p in PlanService.get_all_plans() if p["id"] == pid), None)
+                if plan:
+                    end = date.today() + timedelta(days=plan["duration_months"] * 30)
+                    MembershipService.create_membership(mid, pid, date.today().isoformat(), end.isoformat())
+
+        dialog.open = False
         refresh()
         page.update()
 
-    add_dialog = ft.AlertDialog(
-        title=ft.Text("Add New Member"),
-        content=ft.Column([first_name_input, last_name_input, email_input, phone_input], tight=True),
+    dialog = ft.AlertDialog(
+        title=ft.Text("Member"),
+        content=ft.Column([
+            first_name_input, last_name_input, email_input, phone_input,
+            plan_dropdown
+        ], tight=True),
         actions=[
-            ft.TextButton("Cancel", on_click=lambda _: setattr(add_dialog, "open", False)),
+            ft.TextButton("Cancel", on_click=lambda _: setattr(dialog, "open", False)),
             ft.ElevatedButton("Save", on_click=save_member),
         ]
     )
-    page.overlay.append(add_dialog)
+    page.overlay.append(dialog)
 
-    # ── toolbar ──────────────────────────────────────────────────────────
-    search_bar = ft.TextField(
-        prefix_icon=ft.Icons.SEARCH,
-        hint_text="Search members…",
-        height=42, width=280, border_radius=8,
-        bgcolor=ft.Colors.SURFACE_CONTAINER,
-        border=ft.border.all(0, ft.Colors.TRANSPARENT), content_padding=10,
-        on_change=lambda e: filter_table(e.control.value)
-    )
-
-    add_btn = ft.ElevatedButton(
-        "Add Member", icon=ft.Icons.PERSON_ADD,
-        bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE, height=42,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-        on_click=lambda _: setattr(add_dialog, "open", True)
-    )
+    def open_dialog(m=None):
+        nonlocal edit_mode, current_mid
+        load_plans()
+        if m:
+            edit_mode = True
+            current_mid = m["id"]
+            dialog.title.value = f"Edit Member #{m['id']}"
+            first_name_input.value = m["first_name"]
+            last_name_input.value = m["last_name"]
+            email_input.value = m["email"]
+            phone_input.value = m["phone"] or ""
+            plan_dropdown.value = None
+            plan_dropdown.visible = False # Only assign plan on creation here
+        else:
+            edit_mode = False
+            dialog.title.value = "New Member"
+            first_name_input.value = ""
+            last_name_input.value = ""
+            email_input.value = ""
+            phone_input.value = ""
+            plan_dropdown.value = None
+            plan_dropdown.visible = True
+            
+        dialog.open = True
+        page.update()
 
     # ── data table ───────────────────────────────────────────────────────
     table = ft.DataTable(
@@ -81,10 +108,7 @@ def MembersView(page: ft.Page):
         columns=[
             ft.DataColumn(ft.Text("ID")),
             ft.DataColumn(ft.Text("Full Name")),
-            ft.DataColumn(ft.Text("Email")),
-            ft.DataColumn(ft.Text("Phone")),
             ft.DataColumn(ft.Text("Plan")),
-            ft.DataColumn(ft.Text("Ends")),
             ft.DataColumn(ft.Text("Status")),
             ft.DataColumn(ft.Text("Actions")),
         ],
@@ -92,49 +116,29 @@ def MembersView(page: ft.Page):
         expand=True
     )
 
-    all_members_cache = []
-
-    def build_rows(members):
-        rows = []
-        STATUS_COLORS = {
-            "active":   (ft.Colors.GREEN,  ft.Colors.GREEN_100),
-            "expired":  (ft.Colors.RED,    ft.Colors.RED_100),
-            "canceled": (ft.Colors.ORANGE, ft.Colors.ORANGE_100),
-        }
+    def refresh(e=None):
+        table.rows.clear()
+        members = MemberService.get_all_members()
         for m in members:
-            status = m["membership_status"] or "none"
-            clr, bg = STATUS_COLORS.get(status, (ft.Colors.GREY, ft.Colors.GREY_100))
-            rows.append(ft.DataRow(cells=[
+            def delete_cb(_, mid=m["id"]):
+                MemberService.delete_member(mid)
+                refresh()
+                page.update()
+            
+            def edit_cb(_, mem=m):
+                open_dialog(mem)
+
+            status = (m["membership_status"] or "none").capitalize()
+            table.rows.append(ft.DataRow(cells=[
                 ft.DataCell(ft.Text(str(m["id"]))),
                 ft.DataCell(ft.Text(f"{m['first_name']} {m['last_name']}", weight=ft.FontWeight.W_500)),
-                ft.DataCell(ft.Text(m["email"])),
-                ft.DataCell(ft.Text(m["phone"] or "—")),
                 ft.DataCell(ft.Text(m["plan_name"] or "No Plan")),
-                ft.DataCell(ft.Text(m["end_date"] or "—")),
-                ft.DataCell(ft.Chip(ft.Text(status.capitalize()), bgcolor=bg,
-                                    label_text_style=ft.TextStyle(color=clr))),
+                ft.DataCell(ft.Chip(ft.Text(status), bgcolor=ft.Colors.GREEN_100 if status=="Active" else ft.Colors.RED_100)),
                 ft.DataCell(ft.Row([
-                    ft.IconButton(ft.Icons.EDIT,   icon_color=ft.Colors.BLUE_400),
-                    ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400),
+                    ft.IconButton(ft.Icons.EDIT, icon_color=ft.Colors.BLUE_400, on_click=edit_cb),
+                    ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=delete_cb),
                 ])),
             ]))
-        return rows
-
-    def filter_table(query: str = ""):
-        q = query.lower()
-        filtered = [m for m in all_members_cache
-                    if q in m["first_name"].lower() or q in m["last_name"].lower()
-                    or q in m["email"].lower()]
-        table.rows.clear()
-        table.rows.extend(build_rows(filtered))
-        page.update()
-
-    def refresh(e=None):
-        nonlocal all_members_cache
-        all_members_cache = list(MemberService.get_all_members())
-        table.rows.clear()
-        table.rows.extend(build_rows(all_members_cache))
-        # rebuild stats
         stats_container.content = make_stats()
         page.update()
 
@@ -142,21 +146,16 @@ def MembersView(page: ft.Page):
 
     return ft.Container(
         content=ft.Column([
-            ft.Text("Members", size=30, weight=ft.FontWeight.BOLD),
-            ft.Text("Manage your club members and their memberships",
-                    color=ft.Colors.ON_SURFACE_VARIANT, size=13),
+            ft.Row([
+                ft.Text("Members Management", size=30, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton("Add Member", icon=ft.Icons.ADD, on_click=lambda _: open_dialog(),
+                                  bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             stats_container,
             ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Text("Member List", size=18, weight=ft.FontWeight.BOLD, expand=True),
-                        search_bar, add_btn,
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Divider(height=6, color=ft.Colors.TRANSPARENT),
-                    ft.Column([table], scroll=ft.ScrollMode.AUTO, expand=True),
-                ], expand=True),
+                content=ft.Column([table], scroll=ft.ScrollMode.AUTO, expand=True),
                 bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=18, expand=True
             ),
-        ], spacing=16, expand=True, scroll=ft.ScrollMode.AUTO),
+        ], spacing=16, expand=True),
         padding=28, expand=True
     )
