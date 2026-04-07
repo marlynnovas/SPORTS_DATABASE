@@ -1,0 +1,5 @@
+id,first_name,last_name,membership_status,end_date,access_status
+1,Juan,Perez,active,2026-05-07,Access Allowed
+2,Maria,Rodriguez,active,2026-05-07,Access Allowed
+3,Pedro,García,active,2026-05-07,Access Allowed
+6,reynold,encontrado,active,2027-04-02,Access Allowed

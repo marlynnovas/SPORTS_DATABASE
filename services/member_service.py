@@ -106,4 +106,37 @@ class MemberService:
         except:
             return 0
         finally:
-            if conn: conn.close()
+            conn.close()
+
+    @staticmethod
+    def update_member(member_id, first_name, last_name, email, phone):
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE members SET first_name=?, last_name=?, email=?, phone=? WHERE id=?",
+                (first_name, last_name, email, phone, member_id)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating member: {e}")
+            return False
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_member(member_id):
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            # Also delete memberships of this member
+            cursor.execute("DELETE FROM memberships WHERE member_id=?", (member_id,))
+            cursor.execute("DELETE FROM members WHERE id=?", (member_id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error deleting member: {e}")
+            return False
+        finally:
+            conn.close()

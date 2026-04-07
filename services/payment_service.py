@@ -118,4 +118,18 @@ class PaymentService:
             print(f"Error fetching payments: {e}")
             return []
         finally:
-            if conn: conn.close()
+            conn.close()
+
+    @staticmethod
+    def delete_payment(payment_id: int):
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM payments WHERE id = ?", (payment_id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error deleting payment: {e}")
+            return False
+        finally:
+            conn.close()
