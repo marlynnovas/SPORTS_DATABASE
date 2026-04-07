@@ -4,7 +4,7 @@ from datetime import datetime
 @dataclass
 class AccessLog:
     member_id: int
-    granted: bool
-    access_time: datetime = None
+    result: str  # granted, denied
+    access_date: datetime = None
     message: str = None
     id: int = None

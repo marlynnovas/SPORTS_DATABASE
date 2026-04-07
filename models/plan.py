@@ -1,8 +1,6 @@
-from dataclasses import dataclass
-
 @dataclass
 class Plan:
     name: str
+    duration_days: int
     price: float
-    duration_months: int
     id: int = None

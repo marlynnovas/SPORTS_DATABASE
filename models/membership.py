@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import date
 
 @dataclass
@@ -7,5 +6,5 @@ class Membership:
     plan_id: int
     start_date: date
     end_date: date
-    status: str = 'active'
+    status: str  # active, expired, suspended, pending
     id: int = None
