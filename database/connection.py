@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_NAME = "sports_club.db"
+DB_NAME = os.getenv("DB_NAME")
 
 def get_connection():
     """Returns a connection to the SQLite database."""
