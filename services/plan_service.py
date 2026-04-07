@@ -1,24 +1,24 @@
 from database import get_connection
-from models import Member
+from models import Plan
 
-def create_member(member: Member):
+def create_plan(plan: Plan):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO members (full_name, phone, email)
+        INSERT INTO plans (name, duration_days, price)
         VALUES (?, ?, ?)
-    """, (member.full_name, member.phone, member.email))
+    """, (plan.name, plan.duration_days, plan.price))
 
     conn.commit()
     conn.close()
 
 
-def get_all_members():
+def get_all_plans():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM members")
+    cursor.execute("SELECT * FROM plans")
     rows = cursor.fetchall()
 
     conn.close()
