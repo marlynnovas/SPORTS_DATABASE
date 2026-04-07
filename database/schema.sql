@@ -78,3 +78,31 @@ CREATE TABLE IF NOT EXISTS access_logs (
 
     FOREIGN KEY (member_id) REFERENCES members(id)
 );
+
+-- =========================
+-- VIEWS
+-- =========================
+
+-- VIEW for Active Members with Access Status
+CREATE VIEW IF NOT EXISTS active_members_view AS
+SELECT 
+    m.id, 
+    m.full_name, 
+    ms.status as membership_status,
+    ms.end_date,
+    CASE 
+        WHEN ms.end_date >= date('now') AND ms.status = 'active' THEN 'Allowed'
+        ELSE 'Denied'
+    END as access_status
+FROM members m
+JOIN memberships ms ON m.id = ms.member_id;
+
+-- VIEW for Monthly Revenue Report
+CREATE VIEW IF NOT EXISTS monthly_revenue_view AS
+SELECT 
+    strftime('%Y-%m', payment_date) as month,
+    SUM(amount) as total_revenue,
+    COUNT(id) as payment_count
+FROM payments
+WHERE payment_status = 'paid'
+GROUP BY month;

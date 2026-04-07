@@ -1,6 +1,10 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import flet as ft
 from database.connection import init_db
-import os
 
 def main(page: ft.Page):
     page.title = "Sports Club Management System"
@@ -10,7 +14,7 @@ def main(page: ft.Page):
     
     # Header
     header = ft.AppBar(
-        leading=ft.Icon(ft.icons.SPORTS_SOCCER),
+        leading=ft.Icon(ft.icons.SPORTS_VOLLEYBALL),
         title=ft.Text("Sports Club - Access Control & Payments"),
         bgcolor=ft.colors.SURFACE_VARIANT,
     )
