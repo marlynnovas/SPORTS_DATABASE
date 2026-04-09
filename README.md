@@ -22,6 +22,11 @@ A Python-based application using **Flet** for the UI and **SQLite** for the data
    ```bash
    pip install -r requirements.txt
    ```
+2. Start the virtual enviomment:
+    ```bash
+   source .venv/bin/activate
+   ```
+
 2. Run the application:
    ```bash
    python main.py

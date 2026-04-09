@@ -1,0 +1,4 @@
+id,full_name,email,phone,membership_status,start_date,end_date,plan_name,plan_price,access_status,computed_status
+1,Juan Martinez,juan@example.com,8095551234,active,2026-04-07,2026-05-07,Monthly Basic,1500.0,Access Allowed,active
+2,Maria Rodriguez,maria@example.com,8295554321,active,2026-04-07,2026-05-07,Monthly Basic,1500.0,Access Allowed,active
+3,Pedro García,pedro@example.com,8495556789,active,2026-04-07,2026-05-07,Monthly Basic,1500.0,Access Allowed,active

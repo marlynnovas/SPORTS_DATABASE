@@ -4,18 +4,17 @@ class MemberService:
     @staticmethod
     def create_member(first_name, last_name, email, phone):
         """
-        Registra un nuevo miembro. Concatenamos nombres para cumplir con el esquema (full_name).
+        Registra un nuevo miembro.
         """
-        full_name = f"{first_name} {last_name}".strip()
         conn = None
         try:
             conn = get_connection()
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO members (full_name, phone, email)
-                VALUES (?, ?, ?)
-            """, (full_name, phone, email))
+                INSERT INTO members (first_name, last_name, email, phone)
+                VALUES (?, ?, ?, ?)
+            """, (first_name, last_name, email, phone))
 
             conn.commit()
             return cursor.lastrowid
@@ -42,7 +41,7 @@ class MemberService:
                 FROM members m
                 LEFT JOIN memberships ms ON m.id = ms.member_id
                 LEFT JOIN plans p        ON ms.plan_id = p.id
-                ORDER BY m.full_name ASC
+                ORDER BY m.first_name ASC, m.last_name ASC
             """)
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
@@ -68,9 +67,9 @@ class MemberService:
                 FROM members m
                 LEFT JOIN memberships ms ON m.id = ms.member_id
                 LEFT JOIN plans p        ON ms.plan_id = p.id
-                WHERE m.full_name LIKE ? OR m.email LIKE ?
-                ORDER BY m.full_name ASC
-            """, (search_pattern, search_pattern))
+                WHERE m.first_name LIKE ? OR m.last_name LIKE ? OR m.email LIKE ?
+                ORDER BY m.first_name ASC, m.last_name ASC
+            """, (search_pattern, search_pattern, search_pattern))
 
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
@@ -106,7 +105,37 @@ class MemberService:
         except:
             return 0
         finally:
-            conn.close()
+            if conn: conn.close()
+
+    @staticmethod
+    def count_no_plan() -> int:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM members WHERE id NOT IN (SELECT member_id FROM memberships)"
+            )
+            count = cursor.fetchone()[0]
+            return count
+        except:
+            return 0
+        finally:
+            if conn: conn.close()
+
+    @staticmethod
+    def count_renewals_this_month() -> int:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM memberships WHERE strftime('%Y-%m', end_date) = strftime('%Y-%m', 'now')"
+            )
+            count = cursor.fetchone()[0]
+            return count
+        except:
+            return 0
+        finally:
+            if conn: conn.close()
 
     @staticmethod
     def update_member(member_id, first_name, last_name, email, phone):

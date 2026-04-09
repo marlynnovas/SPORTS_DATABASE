@@ -49,17 +49,17 @@ def main(page: ft.Page):
         label_type=ft.NavigationRailLabelType.ALL,
         min_width=110,
         min_extended_width=200,
-        bgcolor=ft.colors.SURFACE_VARIANT,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
         group_alignment=-0.9,
         destinations=[
             ft.NavigationRailDestination(
-                icon=ft.icons.DASHBOARD_OUTLINED,
-                selected_icon=ft.icons.DASHBOARD,
+                icon=ft.Icons.DASHBOARD_OUTLINED,
+                selected_icon=ft.Icons.DASHBOARD,
                 label="Dashboard",
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.PEOPLE_OUTLINED,
-                selected_icon=ft.icons.PEOPLE,
+                icon=ft.Icons.PEOPLE_OUTLINED,
+                selected_icon=ft.Icons.PEOPLE,
                 label="Members",
             ),
             ft.NavigationRailDestination(
@@ -88,8 +88,8 @@ def main(page: ft.Page):
                 label="Reports",
             ),
             ft.NavigationRailDestination(
-                icon=ft.icons.SETTINGS_OUTLINED,
-                selected_icon=ft.icons.SETTINGS,
+                icon=ft.Icons.SETTINGS_OUTLINED,
+                selected_icon=ft.Icons.SETTINGS,
                 label="Settings",
             ),
         ],

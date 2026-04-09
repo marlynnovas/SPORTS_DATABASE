@@ -12,8 +12,9 @@ class PaymentService:
                 SELECT py.id,
                        py.amount,
                        py.payment_date,
-                       py.payment_status,
-                       m.full_name,
+                       py.status,
+                       m.first_name,
+                       m.last_name,
                        p.name AS plan_name
                 FROM payments py
                 JOIN memberships ms ON py.membership_id = ms.id
@@ -39,7 +40,7 @@ class PaymentService:
             cursor.execute("""
                 SELECT COALESCE(SUM(amount), 0) FROM payments
                 WHERE strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now')
-                  AND payment_status = 'paid'
+                  AND status = 'completed'
             """)
             val = cursor.fetchone()[0]
             return float(val)
@@ -53,7 +54,7 @@ class PaymentService:
         try:
             conn = get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM payments WHERE payment_status = ?", (status,))
+            cursor.execute("SELECT COUNT(*) FROM payments WHERE status = ?", (status,))
             count = cursor.fetchone()[0]
             return count
         except:
@@ -75,27 +76,44 @@ class PaymentService:
             if conn: conn.close()
 
     @staticmethod
-    def register_payment(member_id, membership_id, amount):
+    def count_this_month() -> int:
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM payments WHERE strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now')")
+            return cursor.fetchone()[0]
+        except: return 0
+        finally:
+            if conn: conn.close()
+
+    @staticmethod
+    def create_payment(membership_id, amount, status='completed'):
         """
         Registra un pago y activa la membresía asociada.
-        Migrado de mi implementación robusta previa.
         """
         try:
             conn = get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
-                INSERT INTO payments (member_id, membership_id, amount, payment_status)
-                VALUES (?, ?, ?, 'paid')
-            """, (member_id, membership_id, amount))
+            # Obtener member_id de la membresía
+            cursor.execute("SELECT member_id FROM memberships WHERE id = ?", (membership_id,))
+            res = cursor.fetchone()
+            if not res: return False
+            member_id = res[0]
 
-            # Activar membresía
-            MembershipService.update_membership_status(membership_id, "active")
+            cursor.execute("""
+                INSERT INTO payments (member_id, membership_id, amount, status)
+                VALUES (?, ?, ?, ?)
+            """, (member_id, membership_id, amount, status))
+
+            # Activar membresía si el pago fue completado
+            if status == 'completed':
+                MembershipService.update_membership_status(membership_id, "active")
 
             conn.commit()
             return True
         except Exception as e:
-            print(f"Error registering payment: {e}")
+            print(f"Error creating payment: {e}")
             if conn: conn.rollback()
             return False
         finally:

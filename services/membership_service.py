@@ -10,7 +10,8 @@ class MembershipService:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT ms.*,
-                       m.full_name,
+                       m.first_name,
+                       m.last_name,
                        p.name AS plan_name,
                        p.price
                 FROM memberships ms
