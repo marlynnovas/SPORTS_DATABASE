@@ -1,5 +1,9 @@
-import flet as ft
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import flet as ft
 from database.connection import init_db
 from views.dashboard import DashboardView
 from views.members_view import MembersView
@@ -16,7 +20,6 @@ def main(page: ft.Page):
     page.window_width = 1350
     page.window_height = 950
     page.padding = 0
-    page.bgcolor = ft.Colors.SURFACE
 
     # Main view area
     content_area = ft.Container(expand=True)
@@ -46,17 +49,17 @@ def main(page: ft.Page):
         label_type=ft.NavigationRailLabelType.ALL,
         min_width=110,
         min_extended_width=200,
-        bgcolor=ft.Colors.SURFACE_CONTAINER,
+        bgcolor=ft.colors.SURFACE_VARIANT,
         group_alignment=-0.9,
         destinations=[
             ft.NavigationRailDestination(
-                icon=ft.Icons.DASHBOARD_OUTLINED,
-                selected_icon=ft.Icons.DASHBOARD,
+                icon=ft.icons.DASHBOARD_OUTLINED,
+                selected_icon=ft.icons.DASHBOARD,
                 label="Dashboard",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.PEOPLE_OUTLINED,
-                selected_icon=ft.Icons.PEOPLE,
+                icon=ft.icons.PEOPLE_OUTLINED,
+                selected_icon=ft.icons.PEOPLE,
                 label="Members",
             ),
             ft.NavigationRailDestination(
@@ -85,8 +88,8 @@ def main(page: ft.Page):
                 label="Reports",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.SETTINGS_OUTLINED,
-                selected_icon=ft.Icons.SETTINGS,
+                icon=ft.icons.SETTINGS_OUTLINED,
+                selected_icon=ft.icons.SETTINGS,
                 label="Settings",
             ),
         ],

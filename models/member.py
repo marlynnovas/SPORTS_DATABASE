@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 
 @dataclass
 class Member:
-    first_name: str
-    last_name: str
-    email: str
+    full_name: str
     phone: str = None
+    email: str = None
+    join_date: date = None
     id: int = None
-    created_at: datetime = None
