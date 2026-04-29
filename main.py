@@ -77,21 +77,6 @@ def main(page: ft.Page):
             real_index = rail_to_real.get(rail_index, 0)
             content_area.content = VIEW_BUILDERS[real_index](page)
             page.update()
-        def show_notifications():
-            # Check for failed payments
-            from services.payment_service import PaymentService
-            failed_count = PaymentService.count_by_status("failed")
-            if failed_count > 0:
-                msg = f"You have {failed_count} overdue/failed payments needing attention!"
-                color = ft.Colors.RED_600
-            else:
-                msg = "No new notifications. Everything is up to date."
-                color = ft.Colors.GREEN_600
-                
-            page.snack_bar = ft.SnackBar(content=ft.Text(msg), bgcolor=color)
-            page.snack_bar.open = True
-            page.update()
-
         def logout(e):
             current_role["value"] = None
             show_login()
@@ -119,12 +104,7 @@ def main(page: ft.Page):
                     padding=ft.Padding(8, 4, 8, 4),
                     tooltip=f"Signed in as: {role}",
                 ),
-                ft.IconButton(
-                    icon=ft.Icons.NOTIFICATIONS,
-                    icon_color=ft.Colors.WHITE70,
-                    tooltip="Notifications",
-                    on_click=lambda _: show_notifications(),
-                ),
+
                 ft.IconButton(
                     icon=ft.Icons.LOGOUT,
                     icon_color=ft.Colors.WHITE70,
@@ -137,12 +117,7 @@ def main(page: ft.Page):
         layout = ft.Row([rail, ft.VerticalDivider(width=1), content_area], expand=True)
         page.add(layout)
         
-        def handle_resize(e):
-            rail.extended = page.window_width >= 800
-            page.update()
-        
-        page.on_resize = handle_resize
-        handle_resize(None)
+
         
         change_view(0)
 

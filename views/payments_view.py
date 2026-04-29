@@ -13,8 +13,7 @@ def PaymentsView(page: ft.Page):
                 ft.Text(title, size=12, weight=ft.FontWeight.BOLD),
                 ft.Text(sub,   size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             ], spacing=2),
-            bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=16,
-            col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2}
+            bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=16, expand=True
         )
 
     def make_stats():
@@ -23,7 +22,7 @@ def PaymentsView(page: ft.Page):
         overdue = PaymentService.count_by_status("failed")
         avg     = PaymentService.average_amount()
         count   = PaymentService.count_this_month()
-        return ft.ResponsiveRow([
+        return ft.Row([
             stat_card("Revenue (MTD)",  f"${rev:,.0f}",  "Completed only",   ft.Colors.GREEN),
             stat_card("Pending",        pending,          "Awaiting payment",  ft.Colors.ORANGE),
             stat_card("Failed",         overdue,          "Needs attention",   ft.Colors.RED),
