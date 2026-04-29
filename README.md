@@ -26,3 +26,4 @@ A Python-based application using **Flet** for the UI and **SQLite** for the data
    ```bash
    python main.py
    ```
+# ya-estamos-cansadas
