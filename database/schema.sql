@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS members (
     last_name  TEXT NOT NULL,
     email      TEXT UNIQUE NOT NULL,
     phone      TEXT,
+    sport      TEXT,
     join_date  DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -61,6 +62,7 @@ SELECT
     m.first_name || ' ' || m.last_name AS full_name,
     m.email,
     m.phone,
+    m.sport,
     ms.status AS membership_status,
     ms.start_date,
     ms.end_date,

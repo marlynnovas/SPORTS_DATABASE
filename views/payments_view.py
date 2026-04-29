@@ -91,18 +91,43 @@ def PaymentsView(page: ft.Page):
                 refresh()
                 page.update()
 
-            table.rows.append(ft.DataRow(cells=[
-                ft.DataCell(ft.Text(str(p["id"]))),
-                ft.DataCell(ft.Text(p["payment_date"])),
-                ft.DataCell(ft.Text(f"{p['first_name']} {p['last_name']}")),
-                ft.DataCell(ft.Text(f"${p['amount']:,.2f}", weight=ft.FontWeight.BOLD)),
-                ft.DataCell(ft.Chip(ft.Text(p["status"].capitalize()), 
-                                    bgcolor=ft.Colors.GREEN_100 if p["status"]=="completed" else ft.Colors.RED_100)),
-                ft.DataCell(ft.Row([
-                    ft.IconButton(ft.Icons.RECEIPT, icon_color=ft.Colors.BLUE_400),
-                    ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=delete_cb),
-                ])),
-            ]))
+            # Late payment warning logic
+            is_pending  = p["status"] == "pending"
+            is_overdue  = p["status"] == "failed"
+            status_chip = ft.Chip(ft.Text(p["status"].capitalize()),
+                                  bgcolor=ft.Colors.GREEN_100  if p["status"] == "completed"
+                                     else ft.Colors.ORANGE_100 if is_pending
+                                     else ft.Colors.RED_100)
+
+            warning_icon = None
+            if is_overdue:
+                warning_icon = ft.Tooltip(
+                    message="⚠️ Payment failed – needs attention!",
+                    content=ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_400, size=20)
+                )
+            elif is_pending:
+                warning_icon = ft.Tooltip(
+                    message="⏳ Payment pending – remind member",
+                    content=ft.Icon(ft.Icons.SCHEDULE, color=ft.Colors.ORANGE_400, size=20)
+                )
+
+            name_cell_controls = [ft.Text(f"{p['first_name']} {p['last_name']}")]
+            if warning_icon:
+                name_cell_controls.append(warning_icon)
+
+            table.rows.append(ft.DataRow(
+                color=ft.Colors.RED_900 if is_overdue else (ft.Colors.ORANGE_900 if is_pending else None),
+                cells=[
+                    ft.DataCell(ft.Text(str(p["id"]))),
+                    ft.DataCell(ft.Text(p["payment_date"])),
+                    ft.DataCell(ft.Row(name_cell_controls, spacing=6)),
+                    ft.DataCell(ft.Text(f"${p['amount']:,.2f}", weight=ft.FontWeight.BOLD)),
+                    ft.DataCell(status_chip),
+                    ft.DataCell(ft.Row([
+                        ft.IconButton(ft.Icons.RECEIPT, icon_color=ft.Colors.BLUE_400),
+                        ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=delete_cb),
+                    ])),
+                ]))
         page.update()
 
     refresh()

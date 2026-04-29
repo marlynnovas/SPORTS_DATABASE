@@ -69,6 +69,55 @@ def AccessControlView(page: ft.Page):
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         page.update()
 
+    # ── QR / Membership Code Simulation ──────────────────────────────────
+    qr_member_field = ft.TextField(
+        label="Member ID for Code", width=200, keyboard_type=ft.KeyboardType.NUMBER
+    )
+    qr_display = ft.Container(
+        content=ft.Text("Enter a Member ID and click Generate", color=ft.Colors.ON_SURFACE_VARIANT),
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+        border_radius=12, padding=20, width=480,
+        alignment=ft.Alignment(0, 0),
+    )
+
+    def generate_code(e):
+        if not qr_member_field.value:
+            return
+        mid = qr_member_field.value.strip()
+        import hashlib, datetime
+        seed  = f"SPORTSCLUB-{mid}-{datetime.date.today().isoformat()}"
+        token = hashlib.sha256(seed.encode()).hexdigest()[:16].upper()
+        code  = f"SC-{mid.zfill(5)}-{token}"
+
+        qr_display.content = ft.Column([
+            ft.Text("🔐 Membership Access Code", size=14, weight=ft.FontWeight.BOLD),
+            ft.Container(
+                content=ft.Text(code, size=22, weight=ft.FontWeight.BOLD,
+                                font_family="monospace", selectable=True,
+                                color=ft.Colors.CYAN_300),
+                bgcolor=ft.Colors.BLACK54, border_radius=8, padding=16,
+            ),
+            ft.Text(f"Valid for Member #{mid}  •  {datetime.date.today().isoformat()}",
+                    size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("Present this code at the gate terminal for manual validation.",
+                    size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8)
+        page.update()
+
+    qr_section = ft.Container(
+        content=ft.Column([
+            ft.Text("QR / Membership Code Simulation", size=18, weight=ft.FontWeight.BOLD),
+            ft.Text("Generate a daily unique membership code for a member",
+                    color=ft.Colors.ON_SURFACE_VARIANT, size=13),
+            ft.Row([qr_member_field,
+                    ft.ElevatedButton("Generate Code", icon=ft.Icons.QR_CODE,
+                                      on_click=generate_code, height=50)], spacing=10),
+            qr_display,
+        ], spacing=14, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=20, padding=30,
+        alignment=ft.Alignment(0, 0),
+    )
+
     # Layout construction
     main_layout = ft.Column([
         ft.Row([
@@ -81,11 +130,11 @@ def AccessControlView(page: ft.Page):
         ft.Container(
             content=ft.Column([
                 ft.Text("Real-Time Validation Terminal", size=22, weight=ft.FontWeight.BOLD),
-                ft.Text("Enter member ID manually to simulate card scan", 
+                ft.Text("Enter member ID manually to simulate card scan",
                         color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Row([
                     member_id_field,
-                    ft.ElevatedButton("Validate", icon=ft.Icons.PLAY_ARROW, 
+                    ft.ElevatedButton("Validate", icon=ft.Icons.PLAY_ARROW,
                                       on_click=validate_access, height=50)
                 ], spacing=10),
                 status_banner
@@ -93,6 +142,8 @@ def AccessControlView(page: ft.Page):
             bgcolor=ft.Colors.SURFACE_CONTAINER,
             padding=40, border_radius=20, alignment=ft.Alignment(0, 0)
         ),
+        ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
+        qr_section,
         ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
         ft.Text("Gate Operations Log", size=20, weight=ft.FontWeight.BOLD),
     ], spacing=16, expand=True, scroll=ft.ScrollMode.AUTO)

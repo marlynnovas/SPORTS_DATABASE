@@ -35,6 +35,7 @@ def MembersView(page: ft.Page):
     last_name_input  = ft.TextField(label="Last Name")
     email_input      = ft.TextField(label="Email")
     phone_input      = ft.TextField(label="Phone")
+    sport_input      = ft.TextField(label="Sport (e.g. Swimming, Football, Tennis)")
     
     plan_dropdown = ft.Dropdown(label="Initial Membership Plan", options=[])
 
@@ -48,10 +49,12 @@ def MembersView(page: ft.Page):
         if not first_name_input.value or not last_name_input.value or not email_input.value:
             return
         
+        sport_val = sport_input.value.strip() or None
+
         if edit_mode:
-            MemberService.update_member(current_mid, first_name_input.value, last_name_input.value, email_input.value, phone_input.value)
+            MemberService.update_member(current_mid, first_name_input.value, last_name_input.value, email_input.value, phone_input.value, sport_val)
         else:
-            mid = MemberService.create_member(first_name_input.value, last_name_input.value, email_input.value, phone_input.value)
+            mid = MemberService.create_member(first_name_input.value, last_name_input.value, email_input.value, phone_input.value, sport_val)
             if mid and plan_dropdown.value:
                 pid = int(plan_dropdown.value)
                 plan = next((p for p in PlanService.get_all_plans() if p["id"] == pid), None)
@@ -67,6 +70,7 @@ def MembersView(page: ft.Page):
         title=ft.Text("Member"),
         content=ft.Column([
             first_name_input, last_name_input, email_input, phone_input,
+            sport_input,
             plan_dropdown
         ], tight=True),
         actions=[
@@ -87,6 +91,7 @@ def MembersView(page: ft.Page):
             last_name_input.value = m["last_name"]
             email_input.value = m["email"]
             phone_input.value = m["phone"] or ""
+            sport_input.value = m["sport"] or ""
             plan_dropdown.value = None
             plan_dropdown.visible = False # Only assign plan on creation here
         else:
@@ -96,6 +101,7 @@ def MembersView(page: ft.Page):
             last_name_input.value = ""
             email_input.value = ""
             phone_input.value = ""
+            sport_input.value = ""
             plan_dropdown.value = None
             plan_dropdown.visible = True
             
@@ -108,6 +114,7 @@ def MembersView(page: ft.Page):
         columns=[
             ft.DataColumn(ft.Text("ID")),
             ft.DataColumn(ft.Text("Full Name")),
+            ft.DataColumn(ft.Text("Sport")),
             ft.DataColumn(ft.Text("Plan")),
             ft.DataColumn(ft.Text("Status")),
             ft.DataColumn(ft.Text("Actions")),
@@ -129,9 +136,11 @@ def MembersView(page: ft.Page):
                 open_dialog(mem)
 
             status = (m["membership_status"] or "none").capitalize()
+            sport_txt = m["sport"] or "—"
             table.rows.append(ft.DataRow(cells=[
                 ft.DataCell(ft.Text(str(m["id"]))),
                 ft.DataCell(ft.Text(f"{m['first_name']} {m['last_name']}", weight=ft.FontWeight.W_500)),
+                ft.DataCell(ft.Text(sport_txt, color=ft.Colors.CYAN_300)),
                 ft.DataCell(ft.Text(m["plan_name"] or "No Plan")),
                 ft.DataCell(ft.Chip(ft.Text(status), bgcolor=ft.Colors.GREEN_100 if status=="Active" else ft.Colors.RED_100)),
                 ft.DataCell(ft.Row([

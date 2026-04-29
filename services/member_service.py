@@ -67,13 +67,13 @@ class MemberService:
         return count
 
     @staticmethod
-    def create_member(first_name, last_name, email, phone):
+    def create_member(first_name, last_name, email, phone, sport=None):
         conn = get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO members (first_name, last_name, email, phone) VALUES (?, ?, ?, ?)",
-                (first_name, last_name, email, phone),
+                "INSERT INTO members (first_name, last_name, email, phone, sport) VALUES (?, ?, ?, ?, ?)",
+                (first_name, last_name, email, phone, sport),
             )
             conn.commit()
             return cursor.lastrowid
@@ -84,13 +84,13 @@ class MemberService:
             conn.close()
 
     @staticmethod
-    def update_member(member_id, first_name, last_name, email, phone):
+    def update_member(member_id, first_name, last_name, email, phone, sport=None):
         conn = get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "UPDATE members SET first_name=?, last_name=?, email=?, phone=? WHERE id=?",
-                (first_name, last_name, email, phone, member_id)
+                "UPDATE members SET first_name=?, last_name=?, email=?, phone=?, sport=? WHERE id=?",
+                (first_name, last_name, email, phone, sport, member_id)
             )
             conn.commit()
             return True
