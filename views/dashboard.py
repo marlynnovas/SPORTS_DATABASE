@@ -26,7 +26,8 @@ def DashboardView(page: ft.Page):
                 ft.Text(subtitle, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             ], spacing=6),
             bgcolor=ft.Colors.SURFACE_CONTAINER,
-            border_radius=12, padding=18, expand=True
+            border_radius=12, padding=18,
+            col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2}
         )
 
     # ── quick action dialogs ─────────────────────────────────────────────
@@ -99,13 +100,13 @@ def DashboardView(page: ft.Page):
     quick_actions = ft.Container(
         content=ft.Column([
             ft.Text("Quick Actions", size=14, weight=ft.FontWeight.BOLD),
-            ft.Row([
+            ft.ResponsiveRow([
                 ft.ElevatedButton("New Member",     icon=ft.Icons.PERSON_ADD,  bgcolor=ft.Colors.BLUE_700,  color=ft.Colors.WHITE,
-                                  on_click=lambda _: setattr(new_member_dialog, "open", True)),
+                                  on_click=lambda _: setattr(new_member_dialog, "open", True), col={"xs": 12, "sm": 4}),
                 ft.ElevatedButton("Record Payment", icon=ft.Icons.ADD_CARD,    bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE,
-                                  on_click=lambda _: (load_ms_options(), setattr(payment_dialog, "open", True))),
+                                  on_click=lambda _: (load_ms_options(), setattr(payment_dialog, "open", True)), col={"xs": 12, "sm": 4}),
                 ft.ElevatedButton("Manual Log",     icon=ft.Icons.LOGIN,       bgcolor=ft.Colors.ORANGE_700,color=ft.Colors.WHITE,
-                                  on_click=lambda _: setattr(log_dialog, "open", True)),
+                                  on_click=lambda _: setattr(log_dialog, "open", True), col={"xs": 12, "sm": 4}),
             ], spacing=10),
         ]),
         bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=18
@@ -118,7 +119,7 @@ def DashboardView(page: ft.Page):
     acc_today = AccessService.count_today()
     pend_b = PaymentService.count_by_status("pending")
 
-    stats_row = ft.Row([
+    stats_row = ft.ResponsiveRow([
         stat_card("Total Members",  total_m,   "All registered",     ft.Icons.PEOPLE,    ft.Colors.BLUE_600),
         stat_card("Active",         active_m,  "Current subs",       ft.Icons.CHECK_CIRCLE, ft.Colors.GREEN_600),
         stat_card("Revenue MTD",    f"${rev_mtd:,.0f}", "Paid bills", ft.Icons.MONEY,     ft.Colors.PURPLE_600),

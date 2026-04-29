@@ -15,9 +15,9 @@ def AccessControlView(page: ft.Page):
     )
 
     member_id_field = ft.TextField(
-        label="Enter Member ID", 
+        label="Enter Member ID or Scan Code", 
         width=300, 
-        keyboard_type=ft.KeyboardType.NUMBER,
+        keyboard_type=ft.KeyboardType.TEXT,
         on_submit=lambda e: validate_access(e)
     )
 
@@ -25,7 +25,35 @@ def AccessControlView(page: ft.Page):
         if not member_id_field.value:
             return
         
-        mid = int(member_id_field.value)
+        raw_val = member_id_field.value.strip().upper()
+        mid = None
+        
+        if raw_val.startswith("SC-"):
+            parts = raw_val.split("-")
+            if len(parts) == 3:
+                try:
+                    mid = int(parts[1])
+                    import hashlib, datetime
+                    seed  = f"SPORTSCLUB-{mid}-{datetime.date.today().isoformat()}"
+                    expected_token = hashlib.sha256(seed.encode()).hexdigest()[:16].upper()
+                    if parts[2] != expected_token:
+                        update_banner(False, "Invalid Access Code", ft.Icons.ERROR, ft.Colors.RED)
+                        AccessService.log_access(mid, False, "Invalid or expired token")
+                        member_id_field.value = ""
+                        refresh_logs()
+                        return
+                except ValueError:
+                    pass
+
+        if mid is None:
+            try:
+                mid = int(raw_val)
+            except ValueError:
+                update_banner(False, "Invalid Input Format", ft.Icons.ERROR, ft.Colors.RED)
+                member_id_field.value = ""
+                page.update()
+                return
+
         # Fetch status
         conn = get_connection()
         cursor = conn.cursor()
@@ -58,7 +86,7 @@ def AccessControlView(page: ft.Page):
                 AccessService.log_access(mid, False, f"Denied - {reason}")
         
         member_id_field.value = ""
-        page.update()
+        refresh_logs()
 
     def update_banner(success, message, icon, color):
         status_banner.bgcolor = ft.Colors.GREEN_400 if success else ft.Colors.RED_400
@@ -118,6 +146,36 @@ def AccessControlView(page: ft.Page):
         alignment=ft.Alignment(0, 0),
     )
 
+    # ── Gate Operations Log ──────────────────────────────────────────────
+    logs_table = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("ID")),
+            ft.DataColumn(ft.Text("Member")),
+            ft.DataColumn(ft.Text("Time")),
+            ft.DataColumn(ft.Text("Result")),
+            ft.DataColumn(ft.Text("Message")),
+        ],
+        rows=[],
+        expand=True
+    )
+
+    def refresh_logs():
+        logs_table.rows.clear()
+        logs = AccessService.get_recent_logs(limit=10)
+        for l in logs:
+            result_chip = ft.Chip(
+                ft.Text("Granted" if l['granted'] else "Denied"),
+                bgcolor=ft.Colors.GREEN_100 if l['granted'] else ft.Colors.RED_100
+            )
+            logs_table.rows.append(ft.DataRow(cells=[
+                ft.DataCell(ft.Text(str(l['id']))),
+                ft.DataCell(ft.Text(f"{l['first_name']} {l['last_name']}")),
+                ft.DataCell(ft.Text(l['access_time'])),
+                ft.DataCell(result_chip),
+                ft.DataCell(ft.Text(l['message'])),
+            ]))
+        page.update()
+
     # Layout construction
     main_layout = ft.Column([
         ft.Row([
@@ -146,6 +204,11 @@ def AccessControlView(page: ft.Page):
         qr_section,
         ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
         ft.Text("Gate Operations Log", size=20, weight=ft.FontWeight.BOLD),
+        ft.Container(
+            content=ft.Column([logs_table], scroll=ft.ScrollMode.AUTO, expand=True),
+            bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=16, expand=True
+        ),
     ], spacing=16, expand=True, scroll=ft.ScrollMode.AUTO)
 
+    refresh_logs()
     return ft.Container(content=main_layout, padding=28, expand=True)

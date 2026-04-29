@@ -115,3 +115,21 @@ class MemberService:
             return False
         finally:
             conn.close()
+
+    @staticmethod
+    def update_membership_status(member_id: int, status: str):
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE memberships 
+                SET status = ? 
+                WHERE id = (SELECT id FROM memberships WHERE member_id = ? ORDER BY id DESC LIMIT 1)
+            """, (status, member_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating member status: {e}")
+            return False
+        finally:
+            conn.close()

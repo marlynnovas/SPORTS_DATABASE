@@ -13,7 +13,8 @@ def PaymentsView(page: ft.Page):
                 ft.Text(title, size=12, weight=ft.FontWeight.BOLD),
                 ft.Text(sub,   size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             ], spacing=2),
-            bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=16, expand=True
+            bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=12, padding=16,
+            col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2}
         )
 
     def make_stats():
@@ -22,7 +23,7 @@ def PaymentsView(page: ft.Page):
         overdue = PaymentService.count_by_status("failed")
         avg     = PaymentService.average_amount()
         count   = PaymentService.count_this_month()
-        return ft.Row([
+        return ft.ResponsiveRow([
             stat_card("Revenue (MTD)",  f"${rev:,.0f}",  "Completed only",   ft.Colors.GREEN),
             stat_card("Pending",        pending,          "Awaiting payment",  ft.Colors.ORANGE),
             stat_card("Failed",         overdue,          "Needs attention",   ft.Colors.RED),
@@ -35,6 +36,15 @@ def PaymentsView(page: ft.Page):
     # ── Record Payment Dialog ───────────────────────────────────────────
     membership_dropdown = ft.Dropdown(label="Select Membership", options=[])
     amount_input = ft.TextField(label="Amount ($)", keyboard_type=ft.KeyboardType.NUMBER)
+    status_dropdown = ft.Dropdown(
+        label="Status",
+        value="completed",
+        options=[
+            ft.dropdown.Option("completed", "Completed"),
+            ft.dropdown.Option("pending", "Pending"),
+            ft.dropdown.Option("failed", "Failed"),
+        ]
+    )
 
     def load_memberships():
         ms_list = MembershipService.get_all_memberships()
@@ -51,7 +61,7 @@ def PaymentsView(page: ft.Page):
         try:
             amt = float(amount_input.value)
             mid = int(membership_dropdown.value)
-            PaymentService.create_payment(mid, amt, "completed")
+            PaymentService.create_payment(mid, amt, status_dropdown.value)
             pay_dialog.open = False
             refresh()
             page.update()
@@ -59,7 +69,7 @@ def PaymentsView(page: ft.Page):
 
     pay_dialog = ft.AlertDialog(
         title=ft.Text("Record New Payment"),
-        content=ft.Column([membership_dropdown, amount_input], tight=True),
+        content=ft.Column([membership_dropdown, amount_input, status_dropdown], tight=True),
         actions=[
             ft.TextButton("Cancel", on_click=lambda _: setattr(pay_dialog, "open", False)),
             ft.ElevatedButton("Save Payment", on_click=save_payment),
@@ -101,15 +111,9 @@ def PaymentsView(page: ft.Page):
 
             warning_icon = None
             if is_overdue:
-                warning_icon = ft.Tooltip(
-                    message="⚠️ Payment failed – needs attention!",
-                    content=ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_400, size=20)
-                )
+                warning_icon = ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=ft.Colors.RED_400, size=20, tooltip="⚠️ Payment failed – needs attention!")
             elif is_pending:
-                warning_icon = ft.Tooltip(
-                    message="⏳ Payment pending – remind member",
-                    content=ft.Icon(ft.Icons.SCHEDULE, color=ft.Colors.ORANGE_400, size=20)
-                )
+                warning_icon = ft.Icon(ft.Icons.SCHEDULE, color=ft.Colors.ORANGE_400, size=20, tooltip="⏳ Payment pending – remind member")
 
             name_cell_controls = [ft.Text(f"{p['first_name']} {p['last_name']}")]
             if warning_icon:
@@ -124,6 +128,15 @@ def PaymentsView(page: ft.Page):
                     ft.DataCell(ft.Text(f"${p['amount']:,.2f}", weight=ft.FontWeight.BOLD)),
                     ft.DataCell(status_chip),
                     ft.DataCell(ft.Row([
+                        ft.PopupMenuButton(
+                            icon=ft.Icons.EDIT,
+                            items=[
+                                ft.PopupMenuItem(content=ft.Text("Mark Completed"), on_click=lambda _, pid=p["id"]: (PaymentService.update_payment_status(pid, "completed"), refresh(), page.update())),
+                                ft.PopupMenuItem(content=ft.Text("Mark Pending"), on_click=lambda _, pid=p["id"]: (PaymentService.update_payment_status(pid, "pending"), refresh(), page.update())),
+                                ft.PopupMenuItem(content=ft.Text("Mark Failed"), on_click=lambda _, pid=p["id"]: (PaymentService.update_payment_status(pid, "failed"), refresh(), page.update())),
+                            ],
+                            tooltip="Change Status"
+                        ),
                         ft.IconButton(ft.Icons.RECEIPT, icon_color=ft.Colors.BLUE_400),
                         ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=delete_cb),
                     ])),

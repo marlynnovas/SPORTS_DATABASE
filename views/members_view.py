@@ -144,6 +144,16 @@ def MembersView(page: ft.Page):
                 ft.DataCell(ft.Text(m["plan_name"] or "No Plan")),
                 ft.DataCell(ft.Chip(ft.Text(status), bgcolor=ft.Colors.GREEN_100 if status=="Active" else ft.Colors.RED_100)),
                 ft.DataCell(ft.Row([
+                    ft.PopupMenuButton(
+                        icon=ft.Icons.EDIT_ATTRIBUTES,
+                        items=[
+                            ft.PopupMenuItem(content=ft.Text("Mark Active"), on_click=lambda _, mid=m["id"]: (MemberService.update_membership_status(mid, "active"), refresh(), page.update())),
+                            ft.PopupMenuItem(content=ft.Text("Mark Suspended"), on_click=lambda _, mid=m["id"]: (MemberService.update_membership_status(mid, "suspended"), refresh(), page.update())),
+                            ft.PopupMenuItem(content=ft.Text("Mark Expired"), on_click=lambda _, mid=m["id"]: (MemberService.update_membership_status(mid, "expired"), refresh(), page.update())),
+                            ft.PopupMenuItem(content=ft.Text("Mark Pending Payment"), on_click=lambda _, mid=m["id"]: (MemberService.update_membership_status(mid, "pending payment"), refresh(), page.update())),
+                        ],
+                        tooltip="Change Status"
+                    ),
                     ft.IconButton(ft.Icons.EDIT, icon_color=ft.Colors.BLUE_400, on_click=edit_cb),
                     ft.IconButton(ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=delete_cb),
                 ])),

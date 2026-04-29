@@ -112,7 +112,19 @@ class PaymentService:
             return None
         finally:
             conn.close()
-
+    @staticmethod
+    def update_payment_status(payment_id: int, status: str):
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE payments SET status = ? WHERE id = ?", (status, payment_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating payment status: {e}")
+            return False
+        finally:
+            conn.close()
     @staticmethod
     def delete_payment(payment_id: int):
         conn = get_connection()
