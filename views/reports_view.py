@@ -30,6 +30,17 @@ def ReportsView(page: ft.Page):
                     save_path = res.stdout.strip()
             except Exception:
                 pass
+        elif sys_plat == "Darwin":
+            try:
+                res = subprocess.run([
+                    'osascript', '-e',
+                    f'set theFile to choose file name with prompt "Save Report As:" default name "{default_filename}"',
+                    '-e', 'POSIX path of theFile'
+                ], capture_output=True, text=True)
+                if res.returncode == 0:
+                    save_path = res.stdout.strip()
+            except Exception:
+                pass
         else:
             try:
                 import tkinter as tk
@@ -226,6 +237,11 @@ def ReportsView(page: ft.Page):
                     save_path = res.stdout.strip()
             except Exception:
                 pass
+        elif platform.system() == "Darwin":
+            try:
+                res = subprocess.run(['osascript', '-e', f'set theFile to choose file name with prompt "Save Report As:" default name "{default_filename}"', '-e', 'POSIX path of theFile'], capture_output=True, text=True)
+                if res.returncode == 0: save_path = res.stdout.strip()
+            except Exception: pass
         else:
             try:
                 import tkinter as tk
@@ -271,6 +287,11 @@ def ReportsView(page: ft.Page):
                     save_path = res.stdout.strip()
             except Exception:
                 pass
+        elif platform.system() == "Darwin":
+            try:
+                res = subprocess.run(['osascript', '-e', f'set theFile to choose file name with prompt "Save Report As:" default name "{default_filename}"', '-e', 'POSIX path of theFile'], capture_output=True, text=True)
+                if res.returncode == 0: save_path = res.stdout.strip()
+            except Exception: pass
         else:
             try:
                 import tkinter as tk
@@ -314,10 +335,10 @@ def ReportsView(page: ft.Page):
     def make_stats_row():
         total, active, revenue = MemberService.count_members(), MemberService.count_by_status("active"), PaymentService.revenue_mtd()
         return ft.Row([
-            ft.Container(ft.Column([ft.Text(str(total), size=24, weight=ft.FontWeight.BOLD), ft.Text("Total Members")]), expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
-            ft.Container(ft.Column([ft.Text(str(active), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN), ft.Text("Active Accounts")]), expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
-            ft.Container(ft.Column([ft.Text(f"${revenue:,.0f}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE), ft.Text("Revenue MTD")]), expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
-        ], spacing=12)
+            ft.Container(ft.Column([ft.Text(str(total), size=24, weight=ft.FontWeight.BOLD), ft.Text("Total Members")]), width=200, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
+            ft.Container(ft.Column([ft.Text(str(active), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN), ft.Text("Active Accounts")]), width=200, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
+            ft.Container(ft.Column([ft.Text(f"${revenue:,.0f}", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE), ft.Text("Revenue MTD")]), width=200, bgcolor=ft.Colors.SURFACE_CONTAINER, padding=20, border_radius=12),
+        ], spacing=12, wrap=True)
 
     # Table for Denied Access
     def get_denied_table():
@@ -336,18 +357,17 @@ def ReportsView(page: ft.Page):
     
     return ft.Container(
         content=ft.Column([
-            ft.Row([
-                ft.Column([
-                    ft.Text("System Reports", size=32, weight=ft.FontWeight.BOLD),
-                    ft.Text(f"Reports generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}", color=ft.Colors.ON_SURFACE_VARIANT)
-                ], expand=True),
+            ft.Column([
+                ft.Text("System Reports", size=32, weight=ft.FontWeight.BOLD),
+                ft.Text(f"Reports generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Container(height=10),
                 ft.Row([
-                    ft.ElevatedButton("Export Members CSV", icon=ft.Icons.PEOPLE, on_click=export_csv),
-                    ft.ElevatedButton("Export Payments CSV", icon=ft.Icons.PAYMENTS, on_click=export_payments_csv),
-                    ft.ElevatedButton("Export Attendance CSV", icon=ft.Icons.HISTORY, on_click=export_access_csv),
+                    ft.ElevatedButton("Export Members", icon=ft.Icons.PEOPLE, on_click=export_csv),
+                    ft.ElevatedButton("Export Payments", icon=ft.Icons.PAYMENTS, on_click=export_payments_csv),
+                    ft.ElevatedButton("Export Attendance", icon=ft.Icons.HISTORY, on_click=export_access_csv),
                     ft.ElevatedButton("Print Report", icon=ft.Icons.PRINT, on_click=print_report),
                 ], spacing=8, wrap=True)
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ]),
             ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
             make_stats_row(),
             ft.Text("Access Issues Summary", size=20, weight=ft.FontWeight.BOLD),
